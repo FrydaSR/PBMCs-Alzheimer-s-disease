@@ -1,0 +1,64 @@
+library(Seurat)
+library(Matrix)
+
+
+#IDs_samples
+
+ad_ids <- c("SRR23698246", "SRR23698247", "SRR23698248", "SRR23698249", "SRR23698250", "SRR23698251", 
+            "SRR23698264", "SRR23698265", "SRR23698266", "SRR23698276", "SRR23698277", "SRR23698278", 
+            "SRR23698285", "SRR23698286", "SRR23698287", "SRR23698291", "SRR23698292", "SRR23698293", 
+            "SRR23698297", "SRR23698298", "SRR23698299", "SRR23698304", "SRR23698305", "SRR23698306", 
+            "SRR23698343", "SRR23698344", "SRR23698345", "SRR23698352", "SRR23698353", "SRR23698354", 
+            "SRR23698355", "SRR23698356", "SRR23698357", "SRR23698364", "SRR23698365", "SRR23698366", 
+            "SRR23698370", "SRR23698371", "SRR23698372", "SRR23698373", "SRR23698374", "SRR23698375", 
+            "SRR23698376", "SRR23698377", "SRR23698378", "SRR23698379", "SRR23698380", "SRR23698381", 
+            "SRR23698382", "SRR23698385", "SRR23698384", "SRR23698383", "SRR23698386", "SRR23698387", 
+            "SRR23698388", "SRR23698389", "SRR23698390", "SRR23698391", "SRR23698392", "SRR23698393", 
+            "SRR23698394", "SRR23698395", "SRR23698396", "SRR23698397", "SRR23698398", "SRR23698399", 
+            "SRR23698400", "SRR23698401", "SRR23698402", "SRR23698431", "SRR23698432", "SRR23698433", 
+            "SRR23698434", "SRR23698435", "SRR23698436", "SRR23698440", "SRR23698441", "SRR23698442", 
+            "SRR23698443", "SRR23698444", "SRR23698445", "SRR23698449", "SRR23698450", "SRR23698451")
+
+hd_ids <- c("SRR23698252", "SRR23698252", "SRR23698253", "SRR23698254", "SRR23698255", "SRR23698256", 
+            "SRR23698258", "SRR23698259", "SRR23698260", "SRR23698261", "SRR23698262", "SRR23698263", 
+            "SRR23698267", "SRR23698268", "SRR23698269", "SRR23698270", "SRR23698271", "SRR23698272", 
+            "SRR23698273", "SRR23698274", "SRR23698275", "SRR23698279", "SRR23698280", "SRR23698281", 
+            "SRR23698282", "SRR23698283", "SRR23698284", "SRR23698288", "SRR23698289", "SRR23698290", 
+            "SRR23698294", "SRR23698295", "SRR23698296", "SRR23698347", "SRR23698348", "SRR23698349", 
+            "SRR23698350", "SRR23698351", "SRR23698358", "SRR23698359", "SRR23698360", "SRR23698361", 
+            "SRR23698362", "SRR23698363", "SRR23698367", "SRR23698368", "SRR23698369", "SRR23698425", 
+            "SRR23698426", "SRR23698427", "SRR23698428", "SRR23698426", "SRR23698427", "SRR23698428", 
+            "SRR23698429", "SRR23698430", "SRR23698437", "SRR23698438", "SRR23698439", "SRR23698446", 
+            "SRR23698447", "SRR23698448", "SRR23698452", "SRR23698453", "SRR23698454")
+
+read_matrix_to_seurat <- function(matrix_dir, sample_id) {
+  matrix_path <- file.path(matrix_dir, "matrix.mtx")
+  features_path <- file.path(matrix_dir, "features.tsv")
+  barcodes_path <- file.path(matrix_dir, "barcodes.tsv")
+  expr_matrix <- readMM(matrix_path)
+  features <- read.delim(features_path, header = FALSE, stringsAsFactors = FALSE)
+  barcodes <- read.delim(barcodes_path, header = FALSE, stringsAsFactors = FALSE)
+  
+ 
+  rownames(expr_matrix) <- make.unique(features$V1)
+  colnames(expr_matrix) <- barcodes$V1
+  
+
+  seurat_obj <- CreateSeuratObject(counts = expr_matrix, project = sample_id)
+  
+  return(seurat_obj)
+}
+
+for (id in ad_ids) {
+  path <- file.path("/datos/lymphocytes/monocytesny/alzheimer/ad/solote_results",
+                    paste0(id, "_analysis_SoloTE_output"),
+                    paste0(id, "_analysis_subfamilytes_MATRIX"))
+  seurat_list[[id]] <- read_matrix_to_seurat(path, id)
+}
+
+for (id in hd_ids) {
+  path <- file.path("/datos/lymphocytes/monocytesny/alzheimer/hd/solote_results",
+                    paste0(id, "_analysis_SoloTE_output"),
+                    paste0(id, "_analysis_subfamilytes_MATRIX"))
+  seurat_list[[id]] <- read_matrix_to_seurat(path, id)
+}
