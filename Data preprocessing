@@ -1,8 +1,6 @@
 library(Seurat)
 library(Matrix)
-
-
-#IDs_samples
+library(dplyr)
 
 ad_ids <- c("SRR23698246", "SRR23698247", "SRR23698248", "SRR23698249", "SRR23698250", "SRR23698251", 
             "SRR23698264", "SRR23698265", "SRR23698266", "SRR23698276", "SRR23698277", "SRR23698278", 
@@ -19,7 +17,7 @@ ad_ids <- c("SRR23698246", "SRR23698247", "SRR23698248", "SRR23698249", "SRR2369
             "SRR23698434", "SRR23698435", "SRR23698436", "SRR23698440", "SRR23698441", "SRR23698442", 
             "SRR23698443", "SRR23698444", "SRR23698445", "SRR23698449", "SRR23698450", "SRR23698451")
 
-hd_ids <- c("SRR23698252", "SRR23698252", "SRR23698253", "SRR23698254", "SRR23698255", "SRR23698256", 
+hd_ids <- c("SRR23698252", "SRR23698253", "SRR23698254", "SRR23698255", "SRR23698256", 
             "SRR23698258", "SRR23698259", "SRR23698260", "SRR23698261", "SRR23698262", "SRR23698263", 
             "SRR23698267", "SRR23698268", "SRR23698269", "SRR23698270", "SRR23698271", "SRR23698272", 
             "SRR23698273", "SRR23698274", "SRR23698275", "SRR23698279", "SRR23698280", "SRR23698281", 
@@ -27,9 +25,12 @@ hd_ids <- c("SRR23698252", "SRR23698252", "SRR23698253", "SRR23698254", "SRR2369
             "SRR23698294", "SRR23698295", "SRR23698296", "SRR23698347", "SRR23698348", "SRR23698349", 
             "SRR23698350", "SRR23698351", "SRR23698358", "SRR23698359", "SRR23698360", "SRR23698361", 
             "SRR23698362", "SRR23698363", "SRR23698367", "SRR23698368", "SRR23698369", "SRR23698425", 
-            "SRR23698426", "SRR23698427", "SRR23698428", "SRR23698426", "SRR23698427", "SRR23698428", 
-            "SRR23698429", "SRR23698430", "SRR23698437", "SRR23698438", "SRR23698439", "SRR23698446", 
-            "SRR23698447", "SRR23698448", "SRR23698452", "SRR23698453", "SRR23698454")
+            "SRR23698426", "SRR23698427", "SRR23698428", "SRR23698429", "SRR23698430", "SRR23698437", 
+            "SRR23698438", "SRR23698439", "SRR23698446", "SRR23698447", "SRR23698448", "SRR23698452", 
+            "SRR23698453", "SRR23698454")
+apoe_df <- read.csv("apo.csv", stringsAsFactors = FALSE)
+colnames(apoe_df) <- c("Run", "genotype")  # Asignar los nombres correctos
+seurat_list <- list()
 
 read_matrix_to_seurat <- function(matrix_dir, sample_id) {
   matrix_path <- file.path(matrix_dir, "matrix.mtx")
@@ -39,11 +40,11 @@ read_matrix_to_seurat <- function(matrix_dir, sample_id) {
   features <- read.delim(features_path, header = FALSE, stringsAsFactors = FALSE)
   barcodes <- read.delim(barcodes_path, header = FALSE, stringsAsFactors = FALSE)
   
- 
+  
   rownames(expr_matrix) <- make.unique(features$V1)
   colnames(expr_matrix) <- barcodes$V1
   
-
+  
   seurat_obj <- CreateSeuratObject(counts = expr_matrix, project = sample_id)
   
   return(seurat_obj)
@@ -62,3 +63,35 @@ for (id in hd_ids) {
                     paste0(id, "_analysis_subfamilytes_MATRIX"))
   seurat_list[[id]] <- read_matrix_to_seurat(path, id)
 }
+
+data
+
+for (sample_id in names(seurat_list)) {
+  if (sample_id %in% ad_ids) {
+    seurat_list[[sample_id]]$condition <- "AD"
+  } else if (sample_id %in% hd_ids) {
+    seurat_list[[sample_id]]$condition <- "HD"
+  } else {
+    seurat_list[[sample_id]]$condition <- "Unknown"
+  }
+}
+
+for (sample_id in names(seurat_list)) {
+  apoe_row <- apoe_df[apoe_df$Run == sample_id, ]
+  
+  if (nrow(apoe_row) > 0) {
+    seurat_list[[sample_id]]$APOE <- apoe_row$genotype
+  } else {
+    seurat_list[[sample_id]]$APOE <- NA
+  }
+}
+seurat_combined <- merge(
+  seurat_list[[1]], 
+  y = seurat_list[-1], 
+  add.cell.ids = names(seurat_list), 
+  project = "total"
+)
+
+  
+ 
+  
